@@ -1,0 +1,171 @@
+{
+  "version": "1.0.0",
+  "description": "SAST/DAST Scanner Evaluation Test Cases",
+  "tests": [
+    {
+      "id": "eval-nodejs-express-injection",
+      "name": "Node.js Express - SQL Injection & Missing Security Headers",
+      "description": "Test detection of SQL injection, hardcoded JWT secret, and missing Helmet security headers",
+      "language": "javascript",
+      "severity": "CRITICAL",
+      "code": {
+        "filename": "app.js",
+        "content": "const express = require('express');\nconst mysql = require('mysql');\n\nconst app = express();\napp.use(express.json());\n\n// VULNERABILITY: Hardcoded JWT secret\nconst JWT_SECRET = 'my_secret_key_2026';\n\n// VULNERABILITY: No Helmet middleware for security headers\n// Missing: app.use(helmet());\n\nconst db = mysql.createConnection({\n  host: 'localhost',\n  user: 'root',\n  password: 'admin123',\n  database: 'myapp'\n});\n\n// VULNERABILITY: SQL Injection via string concatenation\napp.get('/api/users/:id', (req, res) => {\n  const userId = req.params.id;\n  const query = `SELECT * FROM users WHERE id = ${userId}`;\n  \n  db.query(query, (err, results) => {\n    if (err) {\n      res.status(500).json({ error: err.message });\n    } else {\n      res.json(results[0]);\n    }\n  });\n});\n\n// VULNERABILITY: Another SQL injection with user input\napp.post('/api/search', (req, res) => {\n  const searchTerm = req.body.q;\n  const query = `SELECT * FROM products WHERE name LIKE '%${searchTerm}%'`;\n  \n  db.query(query, (err, results) => {\n    if (err) {\n      res.status(500).json({ error: err.message });\n    } else {\n      res.json(results);\n    }\n  });\n});\n\n// VULNERABILITY: XSS - dangerouslySetInnerHTML equivalent in response\napp.get('/comments/:id', (req, res) => {\n  const commentId = req.params.id;\n  const query = `SELECT * FROM comments WHERE id = ${commentId}`;\n  \n  db.query(query, (err, results) => {\n    if (err) {\n      res.status(500).json({ error: err.message });\n    } else {\n      // Returning raw HTML without escaping\n      res.send('<html><body>' + results[0].content + '</body></html>');\n    }\n  });\n});\n\n// VULNERABILITY: Missing CSRF tokens\napp.post('/api/transfer', (req, res) => {\n  const amount = req.body.amount;\n  const to = req.body.to;\n  \n  const query = `UPDATE accounts SET balance = balance - ${amount} WHERE id = ${req.user.id}`;\n  db.query(query);\n  \n  const query2 = `UPDATE accounts SET balance = balance + ${amount} WHERE id = ${to}`;\n  db.query(query2);\n  \n  res.json({ success: true });\n});\n\napp.listen(3000, () => {\n  console.log('Server running on port 3000');\n});\n"
+      },
+      "expected_findings": [
+        {
+          "type": "SQL Injection",
+          "cwe": "CWE-89",
+          "severity": "CRITICAL",
+          "pattern": "SELECT.*FROM.*WHERE.*=.*userId|searchTerm|commentId"
+        },
+        {
+          "type": "Hardcoded Secret",
+          "cwe": "CWE-798",
+          "severity": "CRITICAL",
+          "pattern": "JWT_SECRET.*=.*'my_secret_key"
+        },
+        {
+          "type": "Missing Helmet Headers",
+          "cwe": "CWE-693",
+          "severity": "HIGH",
+          "pattern": "No helmet middleware found"
+        },
+        {
+          "type": "Hardcoded DB Credentials",
+          "cwe": "CWE-798",
+          "severity": "CRITICAL",
+          "pattern": "password.*=.*'admin123'"
+        },
+        {
+          "type": "Missing CSRF Protection",
+          "cwe": "CWE-352",
+          "severity": "HIGH",
+          "pattern": "POST.*transfer.*without.*csrf"
+        }
+      ]
+    },
+    {
+      "id": "eval-python-flask-injection",
+      "name": "Python Flask - Command Injection & SSRF",
+      "description": "Test detection of command injection, SSRF, debug mode, and insecure deserialization",
+      "language": "python",
+      "severity": "CRITICAL",
+      "code": {
+        "filename": "app.py",
+        "content": "import os\nfrom flask import Flask, request, render_template\nimport pickle\nimport subprocess\nimport requests\n\napp = Flask(__name__)\napp.config['SECRET_KEY'] = 'hardcoded_secret_2026'\n\n# VULNERABILITY: Debug mode enabled in production\napp.run(debug=True)\n\n# VULNERABILITY: Hardcoded database password\nDATABASE_URL = 'postgresql://admin:super_secret_password@localhost:5432/myapp'\n\n@app.route('/execute', methods=['POST'])\ndef execute_command():\n    # VULNERABILITY: Command injection via subprocess with shell=True\n    filename = request.form.get('filename')\n    command = f\"cat {filename}\"\n    \n    result = subprocess.run(command, shell=True, capture_output=True)\n    return result.stdout.decode()\n\n@app.route('/fetch', methods=['GET'])\ndef fetch_url():\n    # VULNERABILITY: SSRF - No validation of URL\n    url = request.args.get('url')\n    response = requests.get(url, timeout=5)\n    return response.text\n\n@app.route('/download', methods=['POST'])\ndef download_data():\n    # VULNERABILITY: Insecure deserialization with pickle\n    data = request.data\n    try:\n        obj = pickle.loads(data)\n        return {'status': 'success', 'data': obj}\n    except Exception as e:\n        return {'error': str(e)}, 400\n\n@app.route('/admin', methods=['GET', 'POST'])\ndef admin_panel():\n    # VULNERABILITY: No authentication check\n    # VULNERABILITY: Using user input in template without escaping\n    username = request.args.get('user', 'Guest')\n    return render_template('admin.html', username=username)\n\n@app.route('/eval-code', methods=['POST'])\ndef eval_code():\n    # VULNERABILITY: eval() on user input\n    code = request.form.get('code')\n    result = eval(code)  # NEVER DO THIS\n    return {'result': result}\n\n@app.route('/search', methods=['GET'])\ndef search():\n    # VULNERABILITY: SQL injection via string formatting\n    query = request.args.get('q')\n    sql = f\"SELECT * FROM products WHERE name LIKE '%{query}%'\"\n    # Execute SQL...\n    return {'query': sql}\n\nif __name__ == '__main__':\n    # VULNERABILITY: Running with debug=True in production\n    app.run(debug=True, host='0.0.0.0')\n"
+      },
+      "expected_findings": [
+        {
+          "type": "Command Injection",
+          "cwe": "CWE-78",
+          "severity": "CRITICAL",
+          "pattern": "subprocess.*shell=True.*filename"
+        },
+        {
+          "type": "Server-Side Request Forgery",
+          "cwe": "CWE-918",
+          "severity": "HIGH",
+          "pattern": "requests.get.*url.*=.*request.args"
+        },
+        {
+          "type": "Insecure Deserialization",
+          "cwe": "CWE-502",
+          "severity": "CRITICAL",
+          "pattern": "pickle.loads.*request"
+        },
+        {
+          "type": "Debug Mode Enabled",
+          "cwe": "CWE-489",
+          "severity": "HIGH",
+          "pattern": "debug=True|app.run.*debug"
+        },
+        {
+          "type": "Hardcoded Secret",
+          "cwe": "CWE-798",
+          "severity": "CRITICAL",
+          "pattern": "SECRET_KEY.*=.*hardcoded"
+        },
+        {
+          "type": "Hardcoded DB Password",
+          "cwe": "CWE-798",
+          "severity": "CRITICAL",
+          "pattern": "DATABASE_URL.*password"
+        },
+        {
+          "type": "Code Injection via eval()",
+          "cwe": "CWE-95",
+          "severity": "CRITICAL",
+          "pattern": "eval.*request"
+        },
+        {
+          "type": "SQL Injection",
+          "cwe": "CWE-89",
+          "severity": "CRITICAL",
+          "pattern": "SELECT.*WHERE.*LIKE.*query"
+        }
+      ]
+    },
+    {
+      "id": "eval-react-xss-storage",
+      "name": "React Frontend - XSS & Insecure Token Storage",
+      "description": "Test detection of XSS via dangerouslySetInnerHTML, open redirects, and localStorage credential storage",
+      "language": "javascript",
+      "severity": "HIGH",
+      "code": {
+        "filename": "App.jsx",
+        "content": "import React, { useEffect, useState } from 'react';\nimport { useNavigate } from 'react-router-dom';\n\nconst App = () => {\n  const [user, setUser] = useState(null);\n  const [comments, setComments] = useState([]);\n  const navigate = useNavigate();\n\n  useEffect(() => {\n    // VULNERABILITY: JWT token stored in localStorage\n    const token = localStorage.getItem('jwt_token');\n    if (token) {\n      // Token can be accessed by any JavaScript (XSS vulnerability)\n      console.log('Token:', token);\n    }\n  }, []);\n\n  const handleLogin = (credentials) => {\n    fetch('/api/login', {\n      method: 'POST',\n      body: JSON.stringify(credentials)\n    })\n      .then(r => r.json())\n      .then(data => {\n        // VULNERABILITY: Storing JWT in localStorage instead of secure cookie\n        localStorage.setItem('jwt_token', data.token);\n        localStorage.setItem('user_id', data.userId);\n        // VULNERABILITY: Storing password (never do this)\n        localStorage.setItem('password', credentials.password);\n        setUser(data);\n      });\n  };\n\n  // VULNERABILITY: XSS via dangerouslySetInnerHTML\n  const CommentComponent = ({ comment }) => {\n    return (\n      <div>\n        <h3>{comment.author}</h3>\n        {/* DANGEROUS: User input directly injected as HTML */}\n        <div dangerouslySetInnerHTML={{ __html: comment.content }} />\n      </div>\n    );\n  };\n\n  // VULNERABILITY: Another dangerouslySetInnerHTML usage\n  const RenderHTML = ({ userInput }) => {\n    return <div dangerouslySetInnerHTML={{ __html: userInput }} />;\n  };\n\n  // VULNERABILITY: Open redirect via query parameter\n  const handleRedirect = () => {\n    const redirectUrl = new URLSearchParams(window.location.search).get('redirect');\n    if (redirectUrl) {\n      // No validation - can be exploited for phishing\n      window.location.href = redirectUrl;\n    }\n  };\n\n  // VULNERABILITY: No validation on logout redirect\n  const handleLogout = () => {\n    localStorage.removeItem('jwt_token');\n    const returnTo = new URLSearchParams(window.location.search).get('return_to');\n    navigate(returnTo || '/');\n  };\n\n  // VULNERABILITY: Direct DOM manipulation with user input\n  const insertComment = (comment) => {\n    const container = document.getElementById('comments');\n    // Directly setting HTML without escaping\n    container.innerHTML += `<div class=\"comment\">${comment}</div>`;\n  };\n\n  // VULNERABILITY: Using eval with user data\n  const parseCustomFormat = (data) => {\n    try {\n      // NEVER use eval\n      const result = eval(`(${data})`);\n      return result;\n    } catch (e) {\n      return null;\n    }\n  };\n\n  // VULNERABILITY: XSS in event handler\n  const getUserInput = () => {\n    const input = document.getElementById('userInput').value;\n    document.getElementById('output').innerHTML = `You entered: ${input}`;\n  };\n\n  // VULNERABILITY: Passing unvalidated URL to fetch\n  const fetchFromUrl = () => {\n    const url = new URLSearchParams(window.location.search).get('api_endpoint');\n    return fetch(url)\n      .then(r => r.json())\n      .catch(e => console.error('Error:', e));\n  };\n\n  return (\n    <div>\n      <h1>App Component</h1>\n      {user && (\n        <div>\n          <h2>Welcome, {user.name}</h2>\n          {/* VULNERABILITY: No CSRF token in form */}\n          <form onSubmit={e => {\n            e.preventDefault();\n            fetch('/api/transfer', {\n              method: 'POST',\n              headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` },\n              body: JSON.stringify({ amount: 100, to: 'attacker' })\n            });\n          }}>\n            <button type=\"submit\">Transfer Money</button>\n          </form>\n        </div>\n      )}\n      \n      {/* VULNERABILITY: Rendering comments with dangerouslySetInnerHTML */}\n      <div id=\"comments\">\n        {comments.map((comment, i) => (\n          <CommentComponent key={i} comment={comment} />\n        ))}\n      </div>\n\n      {/* VULNERABILITY: XSS via innerHTML */}\n      <div id=\"output\"></div>\n      <input type=\"text\" id=\"userInput\" />\n      <button onClick={getUserInput}>Display Input</button>\n    </div>\n  );\n};\n\nexport default App;\n"
+      },
+      "expected_findings": [
+        {
+          "type": "XSS via dangerouslySetInnerHTML",
+          "cwe": "CWE-79",
+          "severity": "CRITICAL",
+          "pattern": "dangerouslySetInnerHTML.*comment.content|dangerouslySetInnerHTML.*userInput"
+        },
+        {
+          "type": "Open Redirect",
+          "cwe": "CWE-601",
+          "severity": "HIGH",
+          "pattern": "window.location.href.*redirectUrl|navigate.*returnTo"
+        },
+        {
+          "type": "Insecure Token Storage",
+          "cwe": "CWE-798",
+          "severity": "HIGH",
+          "pattern": "localStorage.setItem.*jwt_token|localStorage.getItem.*jwt_token"
+        },
+        {
+          "type": "Password Stored in localStorage",
+          "cwe": "CWE-798",
+          "severity": "CRITICAL",
+          "pattern": "localStorage.setItem.*password"
+        },
+        {
+          "type": "XSS via innerHTML",
+          "cwe": "CWE-79",
+          "severity": "CRITICAL",
+          "pattern": "innerHTML.*=|innerHTML.*\\+="
+        },
+        {
+          "type": "Code Injection via eval()",
+          "cwe": "CWE-95",
+          "severity": "CRITICAL",
+          "pattern": "eval.*data"
+        },
+        {
+          "type": "Missing CSRF Token",
+          "cwe": "CWE-352",
+          "severity": "HIGH",
+          "pattern": "fetch.*POST.*transfer.*without.*csrf"
+        },
+        {
+          "type": "Unvalidated Redirect in fetch()",
+          "cwe": "CWE-601",
+          "severity": "HIGH",
+          "pattern": "fetch.*api_endpoint"
+        }
+      ]
+    }
+  ]
+}
