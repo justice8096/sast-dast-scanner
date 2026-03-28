@@ -4,10 +4,16 @@
 # Searches for API keys, credentials, tokens, and other sensitive data
 # in source code using grep/ripgrep pattern matching
 
-set -e
+set -euo pipefail
 
 TARGET_DIR="${1:-.}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# CWE-426: Validate target path (no traversal)
+if [[ "$TARGET_DIR" == *".."* ]]; then
+    echo "Error: Path traversal detected in target directory"
+    exit 1
+fi
 
 # Color codes
 RED='\033[0;31m'
@@ -90,19 +96,19 @@ main() {
     search_pattern "aws_secret_access_key\s*=|aws_secret_access_key['\"]" "AWS Secret Keys" "CRITICAL" "CWE-798"
     search_pattern "aws_access_key_id\s*=" "AWS Access Key IDs" "CRITICAL" "CWE-798"
 
-    # GitHub / GitLab Tokens
+    # GitHub / GitLab Tokens (CWE-1333: bounded quantifiers, no overlapping wildcards)
     search_pattern "ghp_[a-zA-Z0-9]{36}" "GitHub Personal Access Token" "CRITICAL" "CWE-798"
-    search_pattern "github_token['\"]?\s*[:=]" "GitHub Token Assignment" "CRITICAL" "CWE-798"
-    search_pattern "gl.*?['\"]?[A-Za-z0-9_-]{20,}['\"]?" "GitLab Token Pattern" "CRITICAL" "CWE-798"
+    search_pattern "github_token['\"]?\\s*[:=]" "GitHub Token Assignment" "CRITICAL" "CWE-798"
+    search_pattern "glpat-[A-Za-z0-9_-]{20,64}" "GitLab Token Pattern" "CRITICAL" "CWE-798"
 
     # OAuth & API Keys
     search_pattern "client_id['\"]?\s*[:=]\s*['\"]?[A-Za-z0-9]{20,}" "OAuth Client ID" "HIGH" "CWE-798"
     search_pattern "client_secret['\"]?\s*[:=]" "OAuth Client Secret" "CRITICAL" "CWE-798"
     search_pattern "api[_-]?key['\"]?\s*[:=]" "Generic API Key" "HIGH" "CWE-798"
 
-    # JWT Secrets
-    search_pattern "secret['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9\!\@\#\$\%\^\&\*]{10,}" "JWT Secret" "CRITICAL" "CWE-798"
-    search_pattern "jwt[_-]?secret['\"]?\s*[:=]" "JWT Secret Assignment" "CRITICAL" "CWE-798"
+    # JWT Secrets (CWE-1333: simplified patterns to avoid ReDoS with bounded quantifiers)
+    search_pattern "secret['\"]?\\s*[:=]\\s*['\"]?[a-zA-Z0-9!@#$%^&*]{10,64}" "JWT Secret" "CRITICAL" "CWE-798"
+    search_pattern "jwt[_-]?secret['\"]?\\s*[:=]" "JWT Secret Assignment" "CRITICAL" "CWE-798"
     search_pattern "jwtSecret" "JWT Secret Variable" "CRITICAL" "CWE-798"
 
     # Database Credentials
@@ -126,7 +132,7 @@ main() {
     search_pattern "sk_live_[a-zA-Z0-9]{20,}" "Stripe Live Key" "CRITICAL" "CWE-798"
     search_pattern "sk_test_[a-zA-Z0-9]{20,}" "Stripe Test Key" "HIGH" "CWE-798"
     search_pattern "pk_live_[a-zA-Z0-9]{20,}" "Stripe Publishable Key" "MEDIUM" "CWE-798"
-    search_pattern "auth0['\"]?:\s*['\"][a-zA-Z0-9_-]{20,}['\"]" "Auth0 Credentials" "CRITICAL" "CWE-798"
+    search_pattern "auth0['\"]?:\\s*['\"][a-zA-Z0-9_-]{20,64}['\"]" "Auth0 Credentials" "CRITICAL" "CWE-798"
 
     # Other API Credentials
     search_pattern "sendgrid[_-]?api[_-]?key['\"]?\s*[:=]" "SendGrid API Key" "CRITICAL" "CWE-798"

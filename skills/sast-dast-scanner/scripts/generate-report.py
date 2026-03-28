@@ -17,6 +17,28 @@ from typing import Dict, List, Any
 from datetime import datetime
 from pathlib import Path
 
+# CWE-502: Schema validation for JSON input
+VALID_SEVERITIES = {"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"}
+MAX_FIELD_LENGTH = 10000
+
+def validate_finding(finding: dict) -> bool:
+    """Validate a finding dict against expected schema."""
+    if not isinstance(finding, dict):
+        return False
+    severity = finding.get("severity", "").upper()
+    if severity and severity not in VALID_SEVERITIES:
+        return False
+    # Validate string fields aren't excessively long
+    for key in ("title", "description", "remediation", "file", "code_example"):
+        val = finding.get(key, "")
+        if isinstance(val, str) and len(val) > MAX_FIELD_LENGTH:
+            return False
+    # Validate CWE format if present
+    cwe = finding.get("cwe", "")
+    if cwe and not isinstance(cwe, str):
+        return False
+    return True
+
 # OWASP Top 10 2021 Mapping
 OWASP_MAPPING = {
     "CWE-89": "A03:2021 - Injection",
@@ -134,15 +156,15 @@ class SecurityReport:
         total_findings = (self.critical_count + self.high_count +
                          self.medium_count + self.low_count + self.info_count)
 
-        lines.append(f"**Risk Score**: {risk_score:.1f}/10 ", end="")
         if risk_score >= 8:
-            lines.append("🔴 CRITICAL")
+            risk_label = "CRITICAL"
         elif risk_score >= 6:
-            lines.append("🟠 HIGH")
+            risk_label = "HIGH"
         elif risk_score >= 4:
-            lines.append("🟡 MEDIUM")
+            risk_label = "MEDIUM"
         else:
-            lines.append("🟢 LOW")
+            risk_label = "LOW"
+        lines.append(f"**Risk Score**: {risk_score:.1f}/10 ({risk_label})")
         lines.append("")
 
         lines.append(f"**Total Findings**: {total_findings}")
@@ -294,15 +316,25 @@ def main():
         # Handle both single finding and array of findings
         findings = data if isinstance(data, list) else [data]
 
+        # CWE-502: Validate each finding before processing
         for finding in findings:
+            if not validate_finding(finding):
+                print(f"Warning: Skipping invalid finding: {str(finding)[:100]}", file=sys.stderr)
+                continue
             report.add_finding(finding)
 
         # Generate and output markdown
         markdown = report.generate_markdown()
 
+        # CWE-755: Safe file write with directory creation and error handling
         output_file = sys.argv[2] if len(sys.argv) > 2 else "security-report.md"
-        with open(output_file, 'w') as f:
-            f.write(markdown)
+        output_path = Path(output_file)
+        try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(markdown)
+        except (PermissionError, OSError) as e:
+            print(f"Error writing report to {output_file}: {e}", file=sys.stderr)
+            sys.exit(1)
 
         print(f"Report generated: {output_file}")
 

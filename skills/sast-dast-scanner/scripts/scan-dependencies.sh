@@ -4,10 +4,16 @@
 # Detects and reports known vulnerabilities in project dependencies
 # Supports: npm, pip, cargo, go, Maven, Gradle
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="${1:-.}"
+
+# CWE-426: Validate target path (no traversal)
+if [[ "$TARGET_DIR" == *".."* ]]; then
+    echo "Error: Path traversal detected in target directory"
+    exit 1
+fi
 
 # Color codes for output
 RED='\033[0;31m'
@@ -219,9 +225,14 @@ main() {
     echo "   Scan Summary"
     echo "=================================================="
 
+    # CWE-78: Use jq for safe JSON parsing instead of grep with unquoted variables
     if [[ -f npm-audit.json ]]; then
-        vulnerabilities=$(grep -o '"critical":[0-9]*' npm-audit.json | grep -o '[0-9]*')
-        log_info "npm: Critical vulnerabilities: $vulnerabilities"
+        if command_exists jq; then
+            vulnerabilities=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit.json 2>/dev/null || echo "unknown")
+        else
+            vulnerabilities=$(grep -o '"critical":[0-9]*' npm-audit.json | grep -o '[0-9]*' || echo "unknown")
+        fi
+        log_info "npm: Critical vulnerabilities: ${vulnerabilities}"
     fi
 
     if [[ -f pip-audit.json ]]; then
@@ -229,8 +240,12 @@ main() {
     fi
 
     if [[ -f cargo-audit.json ]]; then
-        vulnerabilities=$(grep -o '"vulnerabilities":[0-9]*' cargo-audit.json | grep -o '[0-9]*')
-        log_info "cargo: Vulnerabilities: $vulnerabilities"
+        if command_exists jq; then
+            vulnerabilities=$(jq '.vulnerabilities | length // 0' cargo-audit.json 2>/dev/null || echo "unknown")
+        else
+            vulnerabilities=$(grep -o '"vulnerabilities":[0-9]*' cargo-audit.json | grep -o '[0-9]*' || echo "unknown")
+        fi
+        log_info "cargo: Vulnerabilities: ${vulnerabilities}"
     fi
 
     if [[ -f nancy-report.json ]]; then
