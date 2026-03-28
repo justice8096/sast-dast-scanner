@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+target/
+
+# Build outputs
+dist/
+build/
+*.o
+*.so
+*.dylib
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scan outputs
+reports/
+scan-results/
+*.json.bak
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
