@@ -1,0 +1,14 @@
+{
+  "name": "SAST/DAST Scanner",
+  "version": "1.0.0",
+  "description": "Comprehensive Static and Dynamic Application Security Testing integration for vulnerability scanning",
+  "author": "Justice",
+  "license": "MIT",
+  "skills": [
+    {
+      "id": "sast-dast-scanner",
+      "name": "SAST/DAST Scanner",
+      "description": "Security vulnerability scanning and assessment"
+    }
+  ]
+}
