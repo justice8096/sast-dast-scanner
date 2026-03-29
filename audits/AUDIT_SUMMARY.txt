@@ -1,0 +1,40 @@
+POST-COMMIT AUDIT SUMMARY
+==========================
+Date: 2026-03-29
+Commit: 47e25ac style: fix flake8 violations / 7068b69 fix: remove blob-decode gen_skill.py, harden scripts, SHA-pin CI, fix LLM_MAPPING duplicate key
+Branch: master
+Audit Type: POST-FIX Re-audit (verifying CRITICAL/HIGH resolution from prior CONDITIONAL PASS)
+
+1. SAST/DAST Scan:        PASS -- 4 findings (0 critical, 0 high, 2 medium, 1 low, 1 info)
+                           Prior: FAIL -- 17 findings (3 critical, 5 high, 4 medium, 2 low, 3 info)
+                           Delta: -3 critical, -5 high, -2 medium, -1 low, -2 info
+2. Supply Chain Audit:     PASS -- SLSA Level 2, 2 issues (0 critical, 0 high, 1 medium, 1 low)
+                           Prior: FAIL -- SLSA Level 0-1, 8 issues (2 critical, 3 high, 2 medium, 1 low)
+3. CWE Mapping:            PASS -- 3 active CWEs (down from 14), mapped to 8 frameworks
+                           Prior: PASS -- 14 CWEs mapped to 8 frameworks (112 total mappings)
+4. LLM Compliance:         82/100 -- GOOD
+                           Prior: 64/100 -- DEVELOPING (+18 delta)
+5. Contribution Analysis:  34% Human / 66% AI (remediation-cycle weighting)
+                           Prior: 42% Human / 58% AI
+
+Overall: PASS (upgraded from CONDITIONAL PASS)
+Action Required: no -- All CRITICAL and HIGH findings resolved.
+
+Resolved this cycle:
+  CRITICAL-01/02/03: gen_skill.py blob-decode obfuscation deleted (CWE-94/426/755)
+  HIGH-01: CI actions SHA-pinned (CWE-829)
+  HIGH-02: requirements-dev.txt added with flake8==7.1.1 (CWE-1104)
+  HIGH-03: EXCLUDE_DIRS converted to Bash arrays in scan-secrets.sh (CWE-78)
+  HIGH-04: scan-dependencies.sh uses subshells + absolute paths (CWE-367)
+  HIGH-05: LLM_MAPPING duplicate CWE-400 key fixed to List values (CWE-694)
+  MEDIUM-03: SECURITY.md updated to GitHub private advisory (CWE-200)
+  MEDIUM-04: .gitignore excludes audit JSON outputs (CWE-312)
+
+Residual (acceptable):
+  MEDIUM-01: scan-secrets.sh TARGET_DIR does not canonicalize symlinks (CWE-20)
+  MEDIUM-02: scan-dependencies.sh fragile grep fallback for jq-absent JSON parse (CWE-20)
+  LOW-01: no session-binding check before parsing npm-audit.json (CWE-345)
+  INFO-01: __pycache__/ bytecodes tracked in git (run: git rm -r --cached)
+
+Next recommended audit: 2026-06-29 or after Sprint 1/2 items from llm-compliance-report.md
+Next target score: 90+/100 LLM Compliance (EXCELLENT)

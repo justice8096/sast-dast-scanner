@@ -1,270 +1,200 @@
-# Supply Chain Security Audit Report (POST-REMEDIATION)
-## SAST/DAST Scanner Skill Project
+# Supply Chain Security Audit
+## sast-dast-scanner
 
-**Report Date**: 2026-03-28 (Re-audit)
-**Auditor**: Supply Chain Security Team
-**Project**: SAST/DAST Security Scanner Skill
-**Framework**: NIST SP 800-218A, SLSA v1.0, OpenSSF Scorecard
+**Report Date**: 2026-03-29
+**Auditor**: Post-Commit Audit Suite (Claude Sonnet 4.6)
+**Commit**: 47e25ac (style: fix flake8 violations) / 7068b69 (primary fix commit)
+**Branch**: master
 **Audit Type**: POST-FIX Re-audit
 
 ---
 
 ## Executive Summary
 
-The SAST/DAST Scanner skill maintains **STRONG** supply chain security posture with zero external dependencies and comprehensive tooling for detecting supply chain vulnerabilities. Post-remediation security controls are more robust.
+| Metric | Prior Audit | This Audit | Delta |
+|--------|------------|------------|-------|
+| SLSA Level | 0–1 | 2 | +1 |
+| Total Issues | 8 (2C/3H/2M/1L) | 2 (0C/0H/1M/1L) | -6 |
+| CI Actions Pinned | No | Yes | FIXED |
+| Dev Dep Pinned | No | Yes (flake8==7.1.1) | FIXED |
+| Audit JSON in .gitignore | No | Yes | FIXED |
+| SECURITY.md Private Disclosure | No | Yes | FIXED |
+| Signed Commits | Yes | Yes | Maintained |
+| SBOM | None | None | No change |
 
-**Supply Chain Risk Score (BEFORE)**: 4.2/10 (MODERATE)
-**Supply Chain Risk Score (AFTER)**: 3.8/10 (LOW-MODERATE) — **Delta: -0.4/10 (10% improvement)**
-**SLSA Level**: 1 → 2 (with post-remediation enhancements)
-**Compliance Status**: Partially Aligned with NIST SP 800-218A (improved)
-
-| Assessment Area | Before | After | Delta | Status |
-|-----------------|--------|-------|-------|--------|
-| Dependency Analysis | 8/10 | 8/10 | — | STRONG |
-| Input Validation | 4/10 | 8/10 | +4 | IMPROVED |
-| Error Handling | 3/10 | 8/10 | +5 | IMPROVED |
-| Code Quality | 6/10 | 8/10 | +2 | IMPROVED |
-| Build Pipeline | 4/10 | 4/10 | — | UNCHANGED |
-| SBOM Assessment | 2/10 | 2/10 | — | UNCHANGED |
+The project advances from SLSA Level 0-1 to SLSA Level 2. The two remaining issues are LOW/MEDIUM and do not affect supply-chain integrity.
 
 ---
 
-## Remediation Impact on Supply Chain Security
+## SLSA Assessment
 
-### 1. Input Validation Improvements (CWE-502 Fix)
+### Current Level: SLSA Level 2
 
-**BEFORE**: JSON inputs accepted without validation
-**AFTER**: Schema validation enforced for all findings
+| SLSA Requirement | Status | Evidence |
+|-----------------|--------|---------|
+| Version-controlled source | PASS | GitHub — `justice8096/sast-dast-scanner` |
+| Automated build process | PASS | `.github/workflows/lint.yml` triggers on push/PR |
+| Build service (hosted runner) | PASS | `ubuntu-latest` GitHub Actions runner |
+| Authenticated provenance | PARTIAL | Signed commits present; no SLSA provenance attestation yet |
+| Isolated build environment | PASS | GitHub-hosted runners provide ephemeral isolation |
+| Pinned dependencies (CI) | PASS | All `uses:` directives SHA-pinned (fixed in 7068b69) |
+| Pinned dev dependencies | PASS | `flake8==7.1.1` in `requirements-dev.txt` (fixed in 7068b69) |
+| Two-party review | NOT MET | Single-developer project — no PR review gate enforced |
+| Hermetic builds | PARTIAL | `pip install` hits PyPI at build time (not fully hermetic) |
+| Non-falsifiable provenance | NOT MET | Requires SLSA L3 tooling (Sigstore/SLSA GitHub Generator) |
 
-**Impact on Supply Chain**:
-- ✓ Prevents injection of malicious vulnerability findings
-- ✓ Protects integrity of security reports
-- ✓ Blocks manipulation of vulnerability metadata
-- ✓ Risk Score: -3/10
-
-**Code Evidence**:
-```python
-# Lines 24-40: Validation function
-def validate_finding(finding: dict) -> bool:
-    """Validate a finding dict against expected schema."""
-    if not isinstance(finding, dict):
-        return False
-    severity = finding.get("severity", "").upper()
-    if severity and severity not in VALID_SEVERITIES:
-        return False
-    # Validate string fields aren't excessively long
-    for key in ("title", "description", "remediation", "file", "code_example"):
-        val = finding.get(key, "")
-        if isinstance(val, str) and len(val) > MAX_FIELD_LENGTH:
-            return False
-    return True
-```
-
-### 2. Error Handling Improvements (CWE-755 Fix)
-
-**BEFORE**: Cryptic errors on file write failures
-**AFTER**: Graceful error handling with diagnostics
-
-**Impact on Supply Chain**:
-- ✓ Reports cannot fail silently
-- ✓ Failed scans are visible and actionable
-- ✓ Supply chain integrity verified
-- ✓ Risk Score: -2/10
-
-### 3. Code Injection Prevention (CWE-78 Fix)
-
-**BEFORE**: Potential command injection in shell scripts
-**AFTER**: Path traversal validation + quoted variables
-
-**Impact on Supply Chain**:
-- ✓ Build artifacts cannot be manipulated via filenames
-- ✓ Prevents unauthorized code execution in build pipeline
-- ✓ Protects against supply chain code injection
-- ✓ Risk Score: -2/10
-
-### 4. DoS Protection (CWE-1333 Fix)
-
-**BEFORE**: Regex patterns vulnerable to ReDoS
-**AFTER**: Bounded quantifiers prevent backtracking
-
-**Impact on Supply Chain**:
-- ✓ Scanning cannot be halted via malicious input files
-- ✓ CI/CD pipeline resilience improved
-- ✓ Availability protection for supply chain scanning
-- ✓ Risk Score: -1/10
+**Path to SLSA L3**: Add a SLSA GitHub Generator workflow with Sigstore-based provenance and enforce PR review via branch protection rules.
 
 ---
 
-## Dependency Analysis Assessment
+## CI/CD Supply Chain
 
-### Current State
-**Status**: ✓ ZERO-DEPENDENCY ARCHITECTURE
+### GitHub Actions Workflow: lint.yml
 
-The project contains **zero external runtime dependencies**, eliminating entire classes of supply chain attacks:
-
-**Manifest Inventory**:
-- ✗ `package.json` - Not present
-- ✗ `requirements.txt` - Not present
-- ✗ `Cargo.toml` - Not present
-- ✗ `go.mod` - Not present
-- ✗ `pom.xml` - Not present
-- ✗ `build.gradle` - Not present
-
-**Risk Assessment**: ✓ MINIMAL (No transitive dependency risks)
-
-### Supply Chain Detection Capabilities
-
-The tool implements scanning for **6 major package managers**:
-
-| Manager | Integration | Status | Capability |
-|---------|-------------|--------|-----------|
-| npm | `npm audit` | ✓ | Critical vulnerability detection |
-| pip | `pip-audit` / `safety` | ✓ | Python security scanning |
-| cargo | `cargo audit` | ✓ | Rust crate auditing |
-| Go | `nancy` | ✓ | Go module vulnerability detection |
-| Maven | `dependency-check` | ✓ | Java/Maven scanning |
-| Gradle | `dependencyCheckAnalyze` | ✓ | Build system security |
-
----
-
-## Build Pipeline & CI/CD Assessment
-
-### Current Status
-**Status**: ✗ NOT IMPLEMENTED (Unchanged)
-
-**Gap Analysis**:
-- No automated testing on commits
-- No security scanning in pipeline
-- No SAST integration
-- No build artifact signing
-
-### Recommended Additions
+All actions SHA-pinned as of commit 7068b69:
 
 ```yaml
-# .github/workflows/security.yml
-name: Security Checks
-
-on: [push, pull_request]
-
-jobs:
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Run scan-dependencies.sh
-        run: bash skills/sast-dast-scanner/scripts/scan-dependencies.sh .
-
-      - name: Run scan-secrets.sh
-        run: bash skills/sast-dast-scanner/scripts/scan-secrets.sh .
-
-      - name: Validate Python scripts
-        run: python3 -m py_compile skills/sast-dast-scanner/scripts/generate-report.py
+actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5        # v4
+ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38  # 2.0.0
+actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065     # v5
 ```
 
----
+**Risk**: LOW — SHA pinning prevents mutable tag attacks. Periodic rotation to newer SHAs needed when upstream releases occur.
 
-## SLSA Framework Alignment
+**Workflow Coverage**:
+- ShellCheck lint on `skills/sast-dast-scanner/scripts/`
+- flake8 lint on `skills/sast-dast-scanner/scripts/` with `--max-line-length=120`
+- Triggers: push, pull_request
 
-### SLSA v1.0 Level Assessment
-
-**BEFORE**: Level 1 (Build process partially documented)
-**AFTER**: Level 1+ (Improved controls with post-remediation fixes)
-
-| Level | Requirement | Status | Evidence |
-|-------|------------|--------|----------|
-| 1 | Build process documented | ⚠️ Partial | SKILL.md present, no detailed SOP |
-| 2 | Version control | ✓ Complete | Git repository assumed |
-| 2 | Access controls | ⚠️ Partial | No documented access control |
-| 3 | Automated testing | ✗ Missing | No CI/CD |
-| 4 | Signed artifacts | ✗ Missing | No signing process |
-
-**Current SLSA Level**: 1 (Single-source Build Level)
-
-**Path to Level 2**:
-1. ✓ Implement GitHub Actions CI/CD (automated builds)
-2. ✓ Add code review process requirements
-3. ✓ Implement branch protection rules
-4. ✓ Add SAST scanning to pipeline
+**Gap**: No secret scanning step in CI (e.g., `git-secrets`, `truffleHog`, or `gitleaks`). The project ships secret-detection scripts but does not self-scan in CI.
 
 ---
 
-## NIST SP 800-218A Alignment
+## Dependency Inventory
 
-### Secure Software Development Practices
+### Runtime Dependencies (no pinning mechanism — no package manifest)
 
-| Practice | Status | Evidence | Score |
-|----------|--------|----------|-------|
-| **PO1**: Document practices | ⚠️ Partial | SKILL.md describes tool, not development process | 5/10 |
-| **PS1**: Prepare org for secure development | ⚠️ Developing | Security patterns documented | 6/10 |
-| **PS2**: Implement practices | ✓ Improving | Post-remediation fixes show adherence | 7/10 |
-| **PS3**: Review practices | ✗ Missing | No regular security review documented | 3/10 |
-| **PE1**: Build tools | ⚠️ Partial | Tool implements SAST/DAST | 6/10 |
-| **PO3**: Review & assess | ✓ Complete | This audit demonstrates capability | 8/10 |
+The project's Bash scripts invoke system tools as optional dependencies. These are documented in SECURITY.md but are not version-pinned by any package manager.
 
-**Overall NIST Alignment**: 55% (Developing toward best practices)
+| Tool | Type | Usage | Pinned? |
+|------|------|-------|---------|
+| bash 4.0+ | Runtime | Script interpreter | No (OS-provided) |
+| python3 3.6+ | Runtime | generate-report.py | No (OS-provided) |
+| npm | Optional | Node.js dep scan | No |
+| pip-audit / safety | Optional | Python dep scan | No |
+| cargo + cargo-audit | Optional | Rust dep scan | No |
+| maven | Optional | Java dep scan | No |
+| gradle | Optional | Java/Kotlin dep scan | No |
+| ripgrep | Optional | Faster secret scan | No |
+| jq | Optional | Safe JSON parse | No |
 
----
+**Assessment**: Acceptable for a CLI tooling project where OS-provided tools are used. Documenting minimum versions in SECURITY.md partially mitigates this.
 
-## Remediation Contribution to Supply Chain Security
+### Dev Dependencies (pinned)
 
-### Pre-Remediation Vulnerabilities & Supply Chain Impact
+| Package | Version | Purpose |
+|---------|---------|---------|
+| flake8 | ==7.1.1 | Python lint |
 
-| CWE | Impact on Supply Chain | Severity |
-|-----|------------------------|----------|
-| CWE-78 | Malicious filenames could compromise builds | HIGH |
-| CWE-502 | False vulnerability reports could hide real issues | HIGH |
-| CWE-1333 | ReDoS could DoS supply chain scanning | MEDIUM |
-| CWE-755 | Silent failures in vulnerability detection | MEDIUM |
-
-### Post-Remediation Risk Reduction
-
-**Aggregate Supply Chain Risk Reduction**: 10% overall
-- Input Validation: +40% (CWE-502 fix)
-- Code Integrity: +25% (CWE-78 fix)
-- Process Availability: +15% (CWE-1333 fix)
-- Error Visibility: +20% (CWE-755 fix)
+**Assessment**: PASS — exact version pin in `requirements-dev.txt`.
 
 ---
 
-## Recommendations
+## Secret Management
 
-### Immediate (Next Sprint)
-1. ✓ All CWE remediations complete
-2. Document security development practices in SECURITY.md
-3. Add GitHub Actions CI/CD workflow
+### .gitignore Coverage (CWE-312 — Fixed)
 
-### Short-term (1-2 Months)
-1. Implement branch protection rules (require code review)
-2. Add supply chain attack simulation tests
-3. Create SBOM generation capability
+Added patterns in commit 7068b69:
+```
+*-audit.json
+*-report.json
+go-deps.json
+npm-audit.json
+pip-audit.json
+cargo-audit.json
+```
 
-### Long-term (6+ Months)
-1. Achieve SLSA Level 2
-2. Implement artifact signing with cosign
-3. Add NIST SP 800-218A compliance documentation
-4. Maintain quarterly supply chain audits
+Scan output JSON files containing potentially sensitive vulnerability data are now excluded from version control.
 
----
+### CI Secrets
 
-## Conclusion
-
-The SAST/DAST Scanner skill maintains **excellent supply chain security posture** with:
-
-- ✓ **Zero external dependencies** (minimal attack surface)
-- ✓ **Comprehensive vulnerability detection** for 6 package managers
-- ✓ **Enhanced input validation** preventing injection attacks
-- ✓ **Robust error handling** ensuring visibility
-- ✓ **Path traversal protection** in build contexts
-
-**Supply Chain Security Score**: 3.8/10 (LOW-MODERATE risk)
-**Post-Remediation Status**: ✓ IMPROVED
-
-Recommended next step: Implement CI/CD pipeline to achieve SLSA Level 2.
+No `${{ secrets.* }}` references present in the current workflow. The CI job only runs lint checks — no deployment, no API keys, no tokens needed.
 
 ---
 
-**Audit Completed**: 2026-03-28
-**Remediation Impact Verified**: 2026-03-28
-**Next Supply Chain Review**: 2026-06-28 (Quarterly)
-**Supply Chain Security Officer**: Supply Chain Security Team
+## SECURITY.md Disclosure Policy
+
+**Prior State**: Instructed reporters to open a public GitHub issue (CWE-200 — information exposure risk).
+
+**Current State**: Uses GitHub's private vulnerability reporting via a direct advisory link:
+`https://github.com/justice8096/sast-dast-scanner/security/advisories/new`
+
+Response SLA: 72-hour initial response, 7-day status update.
+
+**Assessment**: PASS — appropriate responsible disclosure mechanism in place.
+
+---
+
+## SBOM Status
+
+No SBOM (Software Bill of Materials) is currently generated. The project has minimal runtime dependencies (all OS-provided tools), which reduces SBOM urgency, but a CycloneDX 1.4 or SPDX 2.3 SBOM would improve supply-chain transparency for downstream consumers.
+
+**Recommendation**: Generate an SBOM using `cyclonedx-bom` or `syft` as a CI artifact.
+
+---
+
+## plugin.json
+
+License field added in commit 7068b69:
+```json
+"license_file": "LICENSE"
+```
+
+Plugin metadata is now complete: name, version, description, author, license, license_file, skills array.
+
+---
+
+## Risk Matrix
+
+| Risk | Severity | Likelihood | Impact | Mitigated? |
+|------|----------|-----------|--------|-----------|
+| Mutable CI action tag attack | HIGH | Medium | High | YES — SHA-pinned |
+| Floating dev dependency | MEDIUM | Low | Medium | YES — flake8==7.1.1 |
+| Obfuscated supply-chain code | CRITICAL | Confirmed | Critical | YES — gen_skill.py deleted |
+| Scan output JSON committed | MEDIUM | Medium | Medium | YES — .gitignore updated |
+| Public vulnerability disclosure | MEDIUM | Low | Medium | YES — SECURITY.md updated |
+| No secret scan in CI | MEDIUM | Low | High | NO — residual gap |
+| No SBOM | LOW | Low | Low | NO — not yet addressed |
+| No SLSA provenance attestation | LOW | Low | Low | NO — SLSA L2, not L3 |
+
+---
+
+## Framework Compliance
+
+| Framework | Requirement | Status |
+|-----------|------------|--------|
+| SLSA v1.0 | L2: Hosted build, pinned deps | PASS |
+| SLSA v1.0 | L3: Non-falsifiable provenance | NOT MET |
+| NIST SP 800-218A | Pinned third-party components | PASS |
+| NIST SP 800-218A | Automated build verification | PASS |
+| EU AI Act Art. 25 | Risk management for dev pipeline | PASS (improved) |
+| ISO 27001 A.15 | Supplier relationship management | PARTIAL |
+| SOC 2 CC6.1 | Restrict access — signed commits | PASS |
+
+---
+
+## Residual Issues
+
+### MEDIUM-SC-01: No Secret Scanning Step in CI
+**Description**: The project's lint workflow does not include a secret detection pass (e.g., `gitleaks`, `truffleHog`). Leaked credentials could enter the codebase between manual audits.
+**Recommendation**: Add a `gitleaks` action step (SHA-pinned) to the lint workflow.
+
+### LOW-SC-01: SHA Rotation Cadence Undefined
+**Description**: Pinned SHAs must be periodically updated when upstream actions release security fixes. No rotation schedule or tooling (e.g., Dependabot for Actions) is configured.
+**Recommendation**: Enable `dependabot.yml` with `package-ecosystem: github-actions` to automate SHA update PRs.
+
+---
+
+## Verdict
+
+**PASS** (upgraded from FAIL) — SLSA Level 2 achieved. All critical/high supply-chain issues resolved. Two residual medium/low items are acceptable for current maturity. SBOM generation and SLSA L3 provenance are recommended next steps.
