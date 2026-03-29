@@ -1,5 +1,8 @@
 # SAST/DAST Security Scanner
 
+![Lint](https://github.com/justice8096/sast-dast-scanner/actions/workflows/lint.yml/badge.svg)
+![Release](https://img.shields.io/github/v/release/justice8096/sast-dast-scanner)
+
 A comprehensive security vulnerability scanning skill for Claude Code that integrates Static Application Security Testing (SAST) and Dynamic Application Security Testing (DAST) capabilities.
 
 ## Overview
