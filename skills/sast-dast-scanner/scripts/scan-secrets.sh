@@ -39,13 +39,13 @@ else
     log_info "Using grep (consider installing ripgrep for better performance)"
 fi
 
-# Exclude paths
-EXCLUDE_DIRS="--exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.venv --exclude-dir=venv --exclude-dir=vendor --exclude-dir=dist --exclude-dir=build"
-EXCLUDE_FILES="--exclude=*.min.js --exclude=*.map --exclude=*.lock"
+# Exclude paths — use arrays to prevent word-splitting / CWE-78
+EXCLUDE_DIRS=(--exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.venv --exclude-dir=venv --exclude-dir=vendor --exclude-dir=dist --exclude-dir=build)
+EXCLUDE_FILES=(--exclude='*.min.js' --exclude='*.map' --exclude='*.lock')
 
 if [[ "$SEARCH_CMD" == "rg" ]]; then
-    EXCLUDE_DIRS="--glob '!node_modules' --glob '!.git' --glob '!.venv' --glob '!venv' --glob '!vendor' --glob '!dist' --glob '!build'"
-    EXCLUDE_FILES="--glob '!*.min.js' --glob '!*.map' --glob '!*.lock'"
+    EXCLUDE_DIRS=(--glob '!node_modules' --glob '!.git' --glob '!.venv' --glob '!venv' --glob '!vendor' --glob '!dist' --glob '!build')
+    EXCLUDE_FILES=(--glob '!*.min.js' --glob '!*.map' --glob '!*.lock')
 fi
 
 # Function to search and report
@@ -58,9 +58,9 @@ search_pattern() {
     log_info "Searching for: $description"
 
     if [[ "$SEARCH_CMD" == "rg" ]]; then
-        matches=$(rg -i "$pattern" "$TARGET_DIR" $EXCLUDE_DIRS -c 2>/dev/null || echo "0")
+        matches=$(rg -i "$pattern" "$TARGET_DIR" "${EXCLUDE_DIRS[@]}" -c 2>/dev/null || echo "0")
     else
-        matches=$(grep -r -i "$pattern" "$TARGET_DIR" $EXCLUDE_DIRS $EXCLUDE_FILES 2>/dev/null | wc -l || echo "0")
+        matches=$(grep -r -i "$pattern" "$TARGET_DIR" "${EXCLUDE_DIRS[@]}" "${EXCLUDE_FILES[@]}" 2>/dev/null | wc -l || echo "0")
     fi
 
     if [[ "$matches" -gt 0 ]]; then
@@ -69,9 +69,9 @@ search_pattern() {
 
         # Show sample matches (first 3)
         if [[ "$SEARCH_CMD" == "rg" ]]; then
-            rg -i "$pattern" "$TARGET_DIR" $EXCLUDE_DIRS --max-count=3 2>/dev/null | sed 's/^/    /' || true
+            rg -i "$pattern" "$TARGET_DIR" "${EXCLUDE_DIRS[@]}" --max-count=3 2>/dev/null | sed 's/^/    /' || true
         else
-            grep -r -i "$pattern" "$TARGET_DIR" $EXCLUDE_DIRS $EXCLUDE_FILES 2>/dev/null | head -3 | sed 's/^/    /' || true
+            grep -r -i "$pattern" "$TARGET_DIR" "${EXCLUDE_DIRS[@]}" "${EXCLUDE_FILES[@]}" 2>/dev/null | head -3 | sed 's/^/    /' || true
         fi
         echo ""
     fi

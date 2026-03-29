@@ -32,6 +32,14 @@ reports/
 scan-results/
 *.json.bak
 
+# Audit JSON outputs (CWE-312: prevent accidental commit of scan results)
+*-audit.json
+*-report.json
+go-deps.json
+npm-audit.json
+pip-audit.json
+cargo-audit.json
+
 # Logs
 *.log
 

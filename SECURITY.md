@@ -2,9 +2,12 @@
 
 ## Reporting a Vulnerability
 
-To report a security vulnerability in this project, please open a GitHub issue
-with the label `security` or email the maintainer directly via the contact
-information on the GitHub profile.
+To report a security vulnerability in this project, please use GitHub's private
+vulnerability reporting:
+**[Report a vulnerability](https://github.com/justice8096/sast-dast-scanner/security/advisories/new)**
+
+Do not open a public GitHub issue for security vulnerabilities, as this may
+expose the vulnerability before a fix is available.
 
 Do not publicly disclose a vulnerability before it has been assessed and a fix
 or mitigation has been made available. Provide the following information in

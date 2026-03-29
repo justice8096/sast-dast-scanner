@@ -72,12 +72,15 @@ OWASP_MAPPING = {
 }
 
 # LLM Top 10 Mapping (2025)
-LLM_MAPPING = {
-    "CWE-94": "LLM01:2025 - Prompt Injection",
-    "CWE-400": "LLM02:2025 - Insecure Output Handling",
-    "CWE-502": "LLM02:2025 - Insecure Output Handling",
-    "CWE-400": "LLM04:2025 - Model Denial of Service",
-    "CWE-798": "LLM06:2025 - Sensitive Information Disclosure",
+# Values are lists to allow a single CWE to map to multiple LLM categories.
+LLM_MAPPING: Dict[str, List[str]] = {
+    "CWE-94": ["LLM01:2025 - Prompt Injection"],
+    "CWE-400": [
+        "LLM02:2025 - Insecure Output Handling",
+        "LLM04:2025 - Model Denial of Service",
+    ],
+    "CWE-502": ["LLM02:2025 - Insecure Output Handling"],
+    "CWE-798": ["LLM06:2025 - Sensitive Information Disclosure"],
 }
 
 SEVERITY_SCORES = {
@@ -123,9 +126,9 @@ class SecurityReport:
         """Map CWE to OWASP category"""
         return OWASP_MAPPING.get(cwe, "Unknown")
 
-    def get_llm_category(self, cwe: str) -> str:
-        """Map CWE to LLM Top 10"""
-        return LLM_MAPPING.get(cwe, "")
+    def get_llm_categories(self, cwe: str) -> List[str]:
+        """Map CWE to LLM Top 10 (may return multiple categories)"""
+        return LLM_MAPPING.get(cwe, [])
 
     def calculate_risk_score(self) -> float:
         """Calculate overall risk score (0-10)"""
@@ -201,8 +204,8 @@ class SecurityReport:
                         if owasp:
                             lines.append(f"**OWASP**: {owasp}")
 
-                        llm = self.get_llm_category(cwe)
-                        if llm:
+                        llm_entries = self.get_llm_categories(cwe)
+                        for llm in llm_entries:
                             lines.append(f"**LLM Top 10**: {llm}")
 
                         if "file" in finding:
@@ -250,14 +253,11 @@ class SecurityReport:
         lines.append("")
 
         # LLM Top 10 Mapping
-        llm_categories = {}
+        llm_categories: Dict[str, int] = {}
         for finding in self.findings:
             cwe = finding.get("cwe", "CWE-000")
-            category = self.get_llm_category(cwe)
-            if category and category not in llm_categories:
-                llm_categories[category] = 0
-            if category:
-                llm_categories[category] += 1
+            for category in self.get_llm_categories(cwe):
+                llm_categories[category] = llm_categories.get(category, 0) + 1
 
         if llm_categories:
             lines.append("## OWASP Top 10 for LLM Applications 2025 Mapping")

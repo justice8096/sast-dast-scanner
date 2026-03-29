@@ -4,6 +4,7 @@
   "description": "Comprehensive Static and Dynamic Application Security Testing integration for vulnerability scanning",
   "author": "Justice",
   "license": "MIT",
+  "license_file": "LICENSE",
   "skills": [
     {
       "id": "sast-dast-scanner",

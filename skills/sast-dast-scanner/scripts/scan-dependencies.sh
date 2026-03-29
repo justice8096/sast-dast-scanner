@@ -184,38 +184,42 @@ main() {
         exit 1
     fi
 
-    cd "$TARGET_DIR"
+    # Resolve TARGET_DIR to an absolute path before any cd so all callers
+    # receive absolute manifest paths regardless of working-directory changes
+    # (CWE-367: eliminates TOCTOU race between path check and use).
+    TARGET_DIR="$(cd "$TARGET_DIR" && pwd)"
 
     vulnerabilities_found=0
 
-    # Detect and scan package managers
-    if [[ -f "package.json" ]]; then
-        scan_npm "package.json"
+    # Detect and scan package managers — pass absolute paths so scan functions
+    # remain correct even if a subshell changes directory internally.
+    if [[ -f "$TARGET_DIR/package.json" ]]; then
+        (cd "$TARGET_DIR" && scan_npm "$TARGET_DIR/package.json")
         vulnerabilities_found=$((vulnerabilities_found + $?))
     fi
 
-    if [[ -f "requirements.txt" ]] || [[ -f "Pipfile" ]] || [[ -f "pyproject.toml" ]]; then
-        scan_pip "requirements.txt" "Pipfile"
+    if [[ -f "$TARGET_DIR/requirements.txt" ]] || [[ -f "$TARGET_DIR/Pipfile" ]] || [[ -f "$TARGET_DIR/pyproject.toml" ]]; then
+        (cd "$TARGET_DIR" && scan_pip "$TARGET_DIR/requirements.txt" "$TARGET_DIR/Pipfile")
         vulnerabilities_found=$((vulnerabilities_found + $?))
     fi
 
-    if [[ -f "Cargo.toml" ]]; then
-        scan_cargo "Cargo.toml"
+    if [[ -f "$TARGET_DIR/Cargo.toml" ]]; then
+        (cd "$TARGET_DIR" && scan_cargo "$TARGET_DIR/Cargo.toml")
         vulnerabilities_found=$((vulnerabilities_found + $?))
     fi
 
-    if [[ -f "go.mod" ]]; then
-        scan_go "go.mod"
+    if [[ -f "$TARGET_DIR/go.mod" ]]; then
+        (cd "$TARGET_DIR" && scan_go "$TARGET_DIR/go.mod")
         vulnerabilities_found=$((vulnerabilities_found + $?))
     fi
 
-    if [[ -f "pom.xml" ]]; then
-        scan_maven "pom.xml"
+    if [[ -f "$TARGET_DIR/pom.xml" ]]; then
+        (cd "$TARGET_DIR" && scan_maven "$TARGET_DIR/pom.xml")
         vulnerabilities_found=$((vulnerabilities_found + $?))
     fi
 
-    if [[ -f "build.gradle" ]]; then
-        scan_gradle "build.gradle"
+    if [[ -f "$TARGET_DIR/build.gradle" ]]; then
+        (cd "$TARGET_DIR" && scan_gradle "$TARGET_DIR/build.gradle")
         vulnerabilities_found=$((vulnerabilities_found + $?))
     fi
 
@@ -226,30 +230,30 @@ main() {
     echo "=================================================="
 
     # CWE-78: Use jq for safe JSON parsing instead of grep with unquoted variables
-    if [[ -f npm-audit.json ]]; then
+    if [[ -f "$TARGET_DIR/npm-audit.json" ]]; then
         if command_exists jq; then
-            vulnerabilities=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit.json 2>/dev/null || echo "unknown")
+            vulnerabilities=$(jq '.metadata.vulnerabilities.critical // 0' "$TARGET_DIR/npm-audit.json" 2>/dev/null || echo "unknown")
         else
-            vulnerabilities=$(grep -o '"critical":[0-9]*' npm-audit.json | grep -o '[0-9]*' || echo "unknown")
+            vulnerabilities=$(grep -o '"critical":[0-9]*' "$TARGET_DIR/npm-audit.json" | grep -o '[0-9]*' || echo "unknown")
         fi
         log_info "npm: Critical vulnerabilities: ${vulnerabilities}"
     fi
 
-    if [[ -f pip-audit.json ]]; then
-        log_info "pip-audit: Check pip-audit.json for details"
+    if [[ -f "$TARGET_DIR/pip-audit.json" ]]; then
+        log_info "pip-audit: Check $TARGET_DIR/pip-audit.json for details"
     fi
 
-    if [[ -f cargo-audit.json ]]; then
+    if [[ -f "$TARGET_DIR/cargo-audit.json" ]]; then
         if command_exists jq; then
-            vulnerabilities=$(jq '.vulnerabilities | length // 0' cargo-audit.json 2>/dev/null || echo "unknown")
+            vulnerabilities=$(jq '.vulnerabilities | length // 0' "$TARGET_DIR/cargo-audit.json" 2>/dev/null || echo "unknown")
         else
-            vulnerabilities=$(grep -o '"vulnerabilities":[0-9]*' cargo-audit.json | grep -o '[0-9]*' || echo "unknown")
+            vulnerabilities=$(grep -o '"vulnerabilities":[0-9]*' "$TARGET_DIR/cargo-audit.json" | grep -o '[0-9]*' || echo "unknown")
         fi
         log_info "cargo: Vulnerabilities: ${vulnerabilities}"
     fi
 
-    if [[ -f nancy-report.json ]]; then
-        log_info "nancy: Check nancy-report.json for details"
+    if [[ -f "$TARGET_DIR/nancy-report.json" ]]; then
+        log_info "nancy: Check $TARGET_DIR/nancy-report.json for details"
     fi
 
     echo ""
