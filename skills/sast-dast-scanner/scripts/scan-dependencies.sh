@@ -6,7 +6,6 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="${1:-.}"
 
 # CWE-426: Validate target path (no traversal)

@@ -7,7 +7,6 @@
 set -euo pipefail
 
 TARGET_DIR="${1:-.}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # CWE-426: Validate target path (no traversal)
 if [[ "$TARGET_DIR" == *".."* ]]; then
@@ -52,8 +51,6 @@ fi
 search_pattern() {
     local pattern="$1"
     local description="$2"
-    local severity="${3:-HIGH}"
-    local cwe="${4:-CWE-798}"
 
     log_info "Searching for: $description"
 
