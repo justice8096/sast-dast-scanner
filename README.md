@@ -36,6 +36,32 @@ sast-dast-scanner/
 └── LICENSE                          # MIT License
 ```
 
+## Installation
+
+```bash
+git clone git@github.com:justice8096/sast-dast-scanner.git ~/.claude/plugins/sast-dast-scanner
+```
+
+## How It Works
+
+```mermaid
+flowchart TD
+    A[User Request] --> B{Scan Type}
+    B --> C[SAST: Source Code Analysis]
+    B --> D[DAST: Runtime HTTP Analysis]
+    C --> C1[scripts/scan-secrets.sh]
+    C --> C2[scripts/scan-dependencies.sh]
+    C --> C3[Pattern Analysis via SKILL.md]
+    D --> D1[HTTP Header Checks]
+    D --> D2[Cookie Flag Checks]
+    D --> D3[CORS / TLS Checks]
+    C1 & C2 & C3 --> E[Findings JSON]
+    D1 & D2 & D3 --> E
+    E --> F[scripts/generate-report.py]
+    F --> G[Markdown Report]
+    G --> H[Severity-Grouped Output with CWE References]
+```
+
 ## Usage
 
 ### Security Scan
