@@ -21,6 +21,7 @@ from pathlib import Path
 VALID_SEVERITIES = {"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"}
 MAX_FIELD_LENGTH = 10000
 
+
 def validate_finding(finding: dict) -> bool:
     """Validate a finding dict against expected schema."""
     if not isinstance(finding, dict):
@@ -38,6 +39,7 @@ def validate_finding(finding: dict) -> bool:
     if cwe and not isinstance(cwe, str):
         return False
     return True
+
 
 # OWASP Top 10 2021 Mapping
 OWASP_MAPPING = {
@@ -91,6 +93,7 @@ SEVERITY_SCORES = {
     "INFO": 0.5,
 }
 
+
 class SecurityReport:
     def __init__(self):
         self.findings: List[Dict[str, Any]] = []
@@ -133,7 +136,7 @@ class SecurityReport:
     def calculate_risk_score(self) -> float:
         """Calculate overall risk score (0-10)"""
         total_findings = (self.critical_count + self.high_count +
-                         self.medium_count + self.low_count + self.info_count)
+                          self.medium_count + self.low_count + self.info_count)
         if total_findings == 0:
             return 0.0
 
@@ -157,7 +160,7 @@ class SecurityReport:
 
         risk_score = self.calculate_risk_score()
         total_findings = (self.critical_count + self.high_count +
-                         self.medium_count + self.low_count + self.info_count)
+                          self.medium_count + self.low_count + self.info_count)
 
         if risk_score >= 8:
             risk_label = "CRITICAL"
@@ -187,7 +190,7 @@ class SecurityReport:
             severity_order = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
             for severity in severity_order:
                 severity_findings = [f for f in self.findings
-                                    if f.get("severity", "INFO").upper() == severity]
+                                     if f.get("severity", "INFO").upper() == severity]
 
                 if severity_findings:
                     lines.append(f"### {severity} ({len(severity_findings)})")
@@ -293,12 +296,16 @@ class SecurityReport:
         lines.append("## References")
         lines.append("")
         lines.append("- [OWASP Top 10 2021](https://owasp.org/Top10/)")
-        lines.append("- [OWASP Top 10 for LLM Applications 2025](https://owasp.org/www-project-top-10-for-large-language-model-applications/)")
+        lines.append(
+            "- [OWASP Top 10 for LLM Applications 2025]"
+            "(https://owasp.org/www-project-top-10-for-large-language-model-applications/)"
+        )
         lines.append("- [CWE/CWSS](https://cwe.mitre.org/)")
         lines.append("- [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/)")
         lines.append("")
 
         return "\n".join(lines)
+
 
 def main():
     """Read JSON from stdin and generate report"""
@@ -348,6 +355,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
