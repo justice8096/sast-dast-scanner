@@ -28,7 +28,7 @@ This is a documentation/governance release — no behavior changes to SAST patte
 ### Added `[authority]`
 - Inline "*Sources current as of 2026-05*" markers + authority-version pin block in `skills/sast-dast-scanner/SKILL.md`. Pins:
   - OWASP Top 10:2021 (web application risks)
-  - OWASP Top 10 for LLM Applications v1.1 (2024-10)
+  - OWASP Top 10 for LLM Applications 2025 (published 2024-11)
   - CWE List 4.16 (2024-11) — the official CWE list at cwe.mitre.org; verify CWE numbers haven't been deprecated/renumbered before relying on a citation
   - CWE Top 25 (2024 release)
 - Per-vulnerability section headers already cite specific CWE IDs (CWE-78, CWE-89, CWE-79, CWE-22, CWE-327, CWE-502, CWE-798, CWE-20, CWE-1333, CWE-367, CWE-1025, CWE-1321) and OWASP categories (A02:2021, A03:2021, A04:2021, A08:2021) — these stay current; only the umbrella framework versions are pinned in the new currency block.
@@ -66,7 +66,7 @@ Every generated `sast-dast-scan.md` must begin with a provenance block of the fo
 Generated YYYY-MM-DD by sast-dast-scanner vX.Y.Z (<skill-git-short-hash>)
 Target project: <repo-name> @ <commit-short-hash> on branch <branch-name>
 Sources current as of YYYY-MM except where individual findings note otherwise.
-Framework versions: OWASP Top 10:2021, OWASP LLM Top 10 v1.1 (2024-10),
+Framework versions: OWASP Top 10:2021, OWASP Top 10 for LLM Applications 2025 (2024-11),
                     CWE List 4.16 (2024-11), CWE Top 25 2024
 Skill changelog: https://github.com/justice8096/sast-dast-scanner/blob/master/CHANGELOG.md
 ```

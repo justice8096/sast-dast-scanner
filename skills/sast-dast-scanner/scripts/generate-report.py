@@ -30,7 +30,7 @@ MAX_FIELD_LENGTH = 10000
 # versions and no others. See CHANGELOG.md for what changes when bumping.
 FRAMEWORK_VERSIONS = (
     "OWASP Top 10:2021, "
-    "OWASP LLM Top 10 v1.1 (2024-10), "
+    "OWASP Top 10 for LLM Applications 2025 (2024-11), "
     "CWE List 4.16 (2024-11), "
     "CWE Top 25 (2024 release)"
 )
