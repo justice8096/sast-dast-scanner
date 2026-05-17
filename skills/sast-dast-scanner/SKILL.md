@@ -209,6 +209,10 @@ The report includes:
 
 ## Report Output Format
 
+> *Sources current as of 2026-05. Authority-version pins (record these in every report's Provenance Block):* OWASP Top 10:2021 (web app risks); OWASP Top 10 for LLM Applications v1.1 (2024-10); CWE List 4.16 (2024-11, official list at cwe.mitre.org); CWE Top 25 (2024 release). Verify each cited CWE entry is still current — entries occasionally get deprecated or renumbered.
+
+Every generated `sast-dast-scan.md` report MUST begin with a Provenance Block (skill version, commit hash, generation date, target-project repo + commit, sources-current-as-of, framework versions, changelog URL). See the [Skill Versioning and Addendum Framework](https://github.com/justice8096/SecondBrainData/blob/main/SoftwarePractices/Skill-Versioning-and-Addendum-Framework.md) for the full template; example under "Audit-artifact provenance" in `CHANGELOG.md`. Without it, prior audits can't be identified for addendum filings when frameworks update.
+
 Every finding in the generated report uses this structure:
 
     ## [SEVERITY]: [Title]
